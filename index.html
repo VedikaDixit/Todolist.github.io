@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo list</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/simplePagination.js/1.6/jquery.simplePagination.min.js"></script>
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/simplePagination.js/1.6/simplePagination.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scrollbar-width: none;
+        }
+
+        .container {
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .header {
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0px 20px;
+            height: 3.5em;
+            width: 100%;
+            background-color: purple;
+            position: sticky;
+            top: 0;
+        }
+
+        .header>button {
+            padding: 8px 16px;
+            background-color: red;
+            color: white;
+            border: none;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 4px;
+        }
+
+        .content {
+            min-height: 78vh;
+            display: flex;
+            justify-content: space-evenly;
+        }
+
+        .pending-start,
+        .in-progress,
+        .completed {
+            width: 33%;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            overflow-y: scroll;
+        }
+
+        .todo-container {
+            background-color: white;
+            border-radius: 5px;
+            padding: 15px;
+            width: 80%;
+            max-height: 270px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-family: Arial, Helvetica, sans-serif;
+            word-break: break-all;
+            box-shadow: 0px 0px 4px grey;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .todo-container>label {
+            /* height: 10%; */
+        }
+
+        .todo-container>h2 {
+            /* height: 12%; */
+        }
+
+        .todo-container>p {
+            height: 70px;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .todo-container>p:hover {
+            height: fit-content;
+            overflow: auto;
+        }
+
+        .actions {
+            /* height: 20%; */
+            display: flex;
+            justify-content: end;
+            gap: 5px;
+            padding: 5px 10px;
+        }
+
+        .button {
+            padding: 8px 16px;
+            font-size: 14px;
+            color: white;
+            font-weight: 700;
+            border-radius: 5px;
+            border: none;
+        }
+
+        .edit {
+            background-color: rgb(23, 139, 255);
+        }
+
+        .delete {
+            background-color: rgb(252, 45, 45);
+        }
+
+        .headings {
+            background-color: white;
+            position: sticky;
+            top: 3.5em;
+            padding: 0px;
+            color: black;
+            display: flex;
+            justify-content: space-evenly;
+        }
+
+        .headings>h2 {
+            width: 33%;
+            text-align: center;
+        }
+
+        .working-on {
+            background-color: rgb(255, 163, 58);
+            color: black;
+        }
+
+        .finished {
+            background-color: #00D868;
+            color: white;
+        }
+
+        .finished .edit {
+            display: none;
+        }
+
+        .not-started {
+            background-color: #fff6f6;
+            color: black;
+        }
+
+        .overlay-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background-color: rgba(128, 128, 128, 0.425);
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .form {
+            background-color: white;
+            padding: 20px 30px;
+            width: 350px;
+            height: 450px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-evenly;
+            border-radius: 10px;
+            position: relative;
+            box-shadow: 0px 0px 5px grey;
+        }
+
+        .form>div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form>div>span {
+            display: grid;
+            grid-template-columns: 12% 33% 12% 33%;
+            column-gap: 9px;
+        }
+
+        .form>div>input,
+        .form>div>span>input {
+            padding: 5px 10px;
+        }
+
+        .form>button {
+            color: white;
+            font-weight: 700;
+            background-color: dodgerblue;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 10px;
+        }
+
+        .form>span {
+            position: absolute;
+            height: 20px;
+            width: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            top: -3px;
+            right: -3px;
+            background-color: black;
+            color: white;
+            border-radius: 50%;
+        }
+
+        .todo-time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-family: Arial, Helvetica, sans-serif;
+            font-weight: 550;
+        }
+
+        #pagination {
+            display: flex;
+            justify-content: center;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="container">
+        <div class="header">
+            <h1>Todo list</h1>
+            <button id="open_todo_window">Add</button>
+        </div>
+        <div class="header headings">
+            <h2>New</h2>
+            <h2>In Progress</h2>
+            <h2>Completed</h2>
+        </div>
+        <div id="overlay" class="overlay-container">
+            <div class="form">
+                <span id="close_todo_window">&times;</span>
+                <h3 style="text-align: center; font-family: Arial, Helvetica, sans-serif;">Add Todo</h3>
+                <div>
+                    <label for="">Title</label>
+                    <input type="text" name="" id="task_title">
+                </div>
+                <div>
+                    <label for="">Task Description</label>
+                    <textarea name="" id="task" cols="30" rows="5"></textarea>
+                </div>
+                <div>
+                    <label for="">Due Date</label>
+                    <input type="date" id="task_due">
+                </div>
+                <div>
+                    <span>
+                        <label for="">From</label>
+                        <input type="time" name="" id="from_time">
+                        <label for="">To</label>
+                        <input type="time" name="" id="to_time">
+                    </span>
+                </div>
+                <button id="add_todo">Add Todo</button>
+            </div>
+        </div>
+        <div class="content">
+            <div id="new-todo" class="pending-start task-container">
+            </div>
+            <div id="working-on" class="in-progress task-container">
+            </div>
+            <div id="completed" class="completed task-container">
+            </div>
+        </div>
+        <div id="pagination"></div>
+    </div>
+</body>
+<script>
+    //globals
+    let tasks = []
+    let status = ''
+    let target = null
+    let pageStarted = false
+</script>
+<script>// for drag drop functionalities
+    function dragendListener() {
+        this.classList.remove("dragging")
+    }
+
+    function dragStartListener(e) {
+        this.classList.add("dragging")
+        console.log(this);
+        target = e.target
+    }
+
+    async function draglistener(e) {
+        e.preventDefault()
+        console.log(target);
+        const res = await fetch('/todo', {
+            method: "PATCH",
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                status,
+                task_id: target.id
+            })
+        })
+
+        if (res.ok) {
+            this.appendChild(target)
+        } else if (res.status == 500) {
+            alert("Error")
+            return
+        }
+        if (res.status == 304) {
+            return
+        }
+
+        if (this.classList.contains("in-progress")) {
+            target.classList.remove("not-started")
+            target.classList.remove("finished")
+            target.classList.add("working-on")
+        }
+        if (this.classList.contains("completed")) {
+            target.classList.remove("not-started")
+            target.classList.remove("working-on")
+            target.classList.add("finished")
+        }
+        if (this.classList.contains("pending-start")) {
+            target.classList.remove("working-on")
+            target.classList.remove("finished")
+            target.classList.add("not-started")
+        }
+    }
+
+    const containers = document.querySelectorAll(".task-container")
+    containers.forEach(container => {
+        container.addEventListener("dragover", function (e) {
+            e.preventDefault()
+            if (this.classList.contains("in-progress")) {
+                status = '1'
+            }
+            if (this.classList.contains("completed")) {
+                status = '2'
+            }
+            if (this.classList.contains("pending-start")) {
+                status = '0'
+            }
+            console.log("status->", status);
+        })
+        container.addEventListener("drop", draglistener)
+    })
+</script>
+<script> //for form open close
+
+    const overlay = document.getElementById("overlay")
+    const openOverlay = document.getElementById("open_todo_window")
+    const closeOverlay = document.getElementById("close_todo_window")
+    openOverlay.addEventListener('click', e => {
+        overlay.style.display = "flex"
+    })
+    closeOverlay.addEventListener('click', e => {
+        overlay.style.display = "none"
+    })
+
+</script>
+<script> // api call for saving data
+    const title_input = document.getElementById("task_title")
+    const task_input = document.getElementById("task")
+    const due_date_input = document.getElementById("task_due")
+    const from_time_input = document.getElementById("from_time")
+    const to_time_input = document.getElementById("to_time")
+
+    const saveTodo = async () => {
+        const res = await fetch("/todo", {
+            method: "POST",
+            headers: {
+                'content-type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: title_input.value,
+                task: task_input.value,
+                due_date: due_date_input.valueAsDate,
+                from_time: from_time_input.value,
+                to_time: to_time_input.value
+            })
+        })
+        const res_json = await res.json()
+        if (res.ok) {
+            tasks.push(res_json.todo)
+            alert("saved")
+            createTodoTile(res_json.todo)
+            title_input.value = ''
+            task_input.value = ''
+            due_date_input.value = ''
+            from_time_input.value = ''
+            to_time_input.value = ''
+            overlay.style.display = "none"
+        } else {
+            alert("error occured")
+            title_input.value = ''
+            task_input.value = ''
+            due_date_input.value = ''
+            from_time_input.value = ''
+            to_time_input.value = ''
+            overlay.style.display = "none"
+        }
+    }
+    document.getElementById("add_todo").addEventListener('click', e => {
+        saveTodo()
+    })
+
+</script>
+<script>
+
+    async function editTodo(id) {
+        const todo = await tasks.find(t => t.task_id == id)
+        const date_format = new Date(todo.due_date).toISOString().split("T")[0]
+        const overlay_edit = document.createElement("div")
+        overlay_edit.classList.add("overlay-container")
+        overlay_edit.style.display = "flex"
+        const form = document.createElement("div")
+        form.classList.add("form")
+        const closeBtn = document.createElement("span")
+        closeBtn.innerHTML = "<i>&times;</i>"
+        form.appendChild(closeBtn)
+        form.innerHTML = `
+                <h3 style="text-align: center; font-family: Arial, Helvetica, sans-serif;">Edit Todo</h3>
+                <div>
+                    <label for="">Title</label>
+                    <input type="text" value="${todo.title}" id="task_title_${todo.task_id}">
+                </div>
+                <div>
+                    <label for="">Task Description</label>
+                    <textarea id="task_${todo.task_id}" cols="30"  rows="5">${todo.task}</textarea>
+                </div>
+                <div>
+                    <label for="">Due Date</label>
+                    <input type="date" id="task_due_${todo.task_id}" value="${date_format}">
+                </div>
+                <div>
+                    <span>
+                        <label for="">From</label>
+                        <input type="time" name="" id="from_time_${todo.task_id}" value="${todo.from_time}">
+                        <label for="">To</label>
+                        <input type="time" name="" id="to_time_${todo.task_id}" value=${todo.to_time}>
+                    </span>
+                </div>
+                `
+        const editBtn = document.createElement("button")
+        editBtn.innerText = "Save Todo"
+        form.prepend(closeBtn)
+        form.appendChild(editBtn)
+        overlay_edit.appendChild(form)
+        document.getElementById("container").appendChild(overlay_edit)
+        closeBtn.addEventListener('click', e => overlay_edit.remove())
+
+        editBtn.addEventListener('click', async e => {
+            const obj = {
+                task_id: todo.task_id,
+                title: document.getElementById("task_title_" + todo.task_id).value,
+                task: document.getElementById("task_" + todo.task_id).value,
+                due_date: document.getElementById("task_due_" + todo.task_id).value,
+                from_time: document.getElementById("from_time_" + todo.task_id).value,
+                to_time: document.getElementById("to_time_" + todo.task_id).value
+            }
+            const res = await fetch("/todo", {
+                method: "PUT",
+                headers: {
+                    'content-type': 'application/json'
+                },
+                body: JSON.stringify(obj)
+            })
+            if (res.ok) {
+                updateUI(obj)
+                overlay_edit.remove()
+            } else if (res.status == 500) {
+                alert("server error")
+            }
+        })
+
+    }
+
+    async function deleteTodo(id) {
+        const res = await fetch("/todo?todo=" + id, {
+            method: "DELETE",
+        })
+        if (res.ok) {
+            document.getElementById(id).remove()
+        } else if (res.status == 500) {
+            alert("server error")
+        }
+    }
+
+    function closeOverlayEdit(child) {
+        child.remove()
+    }
+
+    function updateUI(t) {
+        console.log("object");
+        document.getElementById("tl-" + t.task_id).innerText = t.title
+        document.getElementById('d-' + t.task_id).innerText = new Date(t.due_date).toDateString()
+        document.getElementById("t-" + t.task_id).innerText = t.from_time + " to " + t.to_time
+        document.getElementById("desc-" + t.task_id).innerText = t.task
+    }
+</script>
+<script>
+    function createTodoTile(t) {
+        const container = document.createElement("div")
+        container.id = t.task_id
+        container.classList.add("todo-container")
+        container.classList.add("draggable")
+        container.setAttribute("draggable", true)
+        container.innerHTML = `
+                    <label class="todo-time"><span id="d-${t.task_id}">${new Date(t.due_date).toLocaleDateString()}</span><span id="t-${t.task_id}">${t.from_time} to ${t.to_time}</span></label>
+                    <h2 id="tl-${t.task_id}">${t.title}</h2>
+                    <p id="desc-${t.task_id}">${t.task}</p>
+                    <div class="actions">
+                        <button class="button edit" onclick="editTodo('${t.task_id}')">Edit</button>
+                        <button class="button delete" onclick="deleteTodo('${t.task_id}')">Delete</button>
+                    </div>`
+
+        container.addEventListener("dragstart", dragStartListener)
+        container.addEventListener("dragend", dragendListener)
+        if (t.status == '0') {
+            container.classList.add("not-started")
+            document.getElementById("new-todo").appendChild(container)
+        } else if (t.status == '1') {
+            container.classList.add("working-on")
+            document.getElementById("working-on").appendChild(container)
+        }
+        if (t.status == '2') {
+            container.classList.add("finished")
+            document.getElementById("completed").appendChild(container)
+        }
+
+    }
+
+    async function fetchData(page, items) {
+        const res = await fetch('/todo?page=' + page + "&items=" + items)
+        const data = await res.json()
+        if(!pageStarted){
+            initPage(data.count)
+            pageStarted = true
+        }
+        document.getElementById("new-todo").innerHTML = ""
+        document.getElementById("working-on").innerHTML = ""
+        document.getElementById("completed").innerHTML = ""
+        tasks = []
+        data.todos.forEach(t => {
+            tasks.push(t)
+            createTodoTile(t)
+        })
+    }
+
+    document.addEventListener("DOMContentLoaded",e=>fetchData(1,10))
+
+    function initPage(total) {
+        $('#pagination').pagination({
+            items: total,
+            itemsOnPage: 10,
+            onPageClick: function (page) {
+                fetchData(page,10)
+                // fetchData()
+            }
+        });
+    }
+</script>
+
+</html>
